@@ -11,7 +11,8 @@ export async function authenticated(request:Request) {
  const auth=createClient(supabaseUrl,supabasePublicKey,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data,error}=await auth.auth.getUser(token);
  if(error||!data.user)throw new HttpError('Sua sessão expirou. Entre novamente.',401);
- const secret=process.env.SUPABASE_SECRET_KEY;
+ const cloudflareEnv=(await import('cloudflare:workers')).env as unknown as {SUPABASE_SECRET_KEY?:string};
+ const secret=cloudflareEnv.SUPABASE_SECRET_KEY;
  if(!secret)throw new HttpError('O salvamento ainda não foi habilitado no servidor. A demonstração continua disponível.',503);
  const db=createClient(supabaseUrl,secret,{auth:{persistSession:false,autoRefreshToken:false}});
  return {owner:data.user.id,db};
