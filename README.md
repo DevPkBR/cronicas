@@ -8,7 +8,9 @@ MVP de RPG solo em português, com narrador de IA, ações livres e regras contr
 - Gemini 2.5 Flash-Lite com chave própria em memória; duas chamadas por turno.
 - Demonstração de três cenas, claramente identificada como sem IA.
 - Progresso ainda em memória: recarregar reinicia a partida.
-- Supabase, login, persistência e fallback entre provedores são próximas etapas; não estão ativos.
+- Banco Supabase com personagens, campanhas e turnos criado e protegido por RLS.
+- Login e salvamento ainda não integrados à aplicação; fallback de IA também permanece pendente.
+- Migração, tipos gerados e testes SQL em [docs/database.md](docs/database.md).
 
 ## Stack e execução
 TypeScript, React e Vinext (API compatível com Next.js, ainda experimental), Vite e Cloudflare Workers. A migração preserva o runtime testado do protótipo, com dependências fixadas no package-lock.json.
