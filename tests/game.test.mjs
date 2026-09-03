@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {resolve,initialState,characterSchema,demoTurn} from '../.test-build/game.mjs';
+const character={name:'Ari',origin:'Viajante',goal:'Encontrar abrigo',weapon:'Bastão'};
+const intent={kind:'test',attribute:'Corpo',difficulty:'normal',danger:true,reason:'Atravessar a ponte'};
+test('character requires explicit choices',()=>{assert.equal(characterSchema.safeParse({...character,weapon:''}).success,false);assert.equal(characterSchema.safeParse({...character,origin:''}).success,false);});
+test('d12 boundaries distinguish success, cost and failure',()=>{assert.equal(resolve(initialState,character,intent,7).result,'sucesso');assert.equal(resolve(initialState,character,intent,5).result,'sucesso com custo');assert.equal(resolve(initialState,character,intent,4).result,'fracasso');});
+test('failed dialogue never causes physical damage',()=>assert.equal(resolve(initialState,character,{...intent,danger:false},1).state.hp,12));
+test('dangerous defeat retreats without killing player',()=>{const r=resolve({...initialState,hp:2},character,intent,1);assert.equal(r.state.hp,1);assert.equal(r.result,'derrota e retirada');});
+test('insufficient energy does not charge or roll magic',()=>{const r=resolve({...initialState,energy:1},character,{...intent,kind:'magic'},12);assert.equal(r.result,'sem energia');assert.equal(r.state.energy,1);});
+test('rest caps resources and does not mutate original state',()=>{const before={...initialState};const r=resolve(before,character,{...intent,kind:'rest'},1);assert.equal(r.state.hp,12);assert.equal(r.state.energy,6);assert.deepEqual(before,initialState);});
+test('demo stops after three turns',()=>{let s=initialState;let entry;for(let i=0;i<3;i++){const r=demoTurn(s,character,'Continuar');s=r.state;entry=r.entry;}assert.equal(s.turn,3);assert.equal(entry.choices.length,0);});
