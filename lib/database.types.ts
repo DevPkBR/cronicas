@@ -97,6 +97,8 @@ export type Database = {
           error_code: string | null
           id: string
           intent: Json | null
+          lease_token: string | null
+          lease_until: string | null
           owner_id: string
           provider: string | null
           request_id: string
@@ -114,6 +116,8 @@ export type Database = {
           error_code?: string | null
           id?: string
           intent?: Json | null
+          lease_token?: string | null
+          lease_until?: string | null
           owner_id: string
           provider?: string | null
           request_id: string
@@ -131,6 +135,8 @@ export type Database = {
           error_code?: string | null
           id?: string
           intent?: Json | null
+          lease_token?: string | null
+          lease_until?: string | null
           owner_id?: string
           provider?: string | null
           request_id?: string
@@ -155,7 +161,75 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      checkpoint_turn: {
+        Args: {
+          p_intent: Json
+          p_lease: string
+          p_owner: string
+          p_resolution: Json
+          p_turn: string
+        }
+        Returns: undefined
+      }
+      create_campaign: {
+        Args: {
+          p_character: Json
+          p_id: string
+          p_owner: string
+          p_state: Json
+        }
+        Returns: string
+      }
+      finish_turn: {
+        Args: {
+          p_entry: Json
+          p_lease: string
+          p_owner: string
+          p_state: Json
+          p_turn: string
+        }
+        Returns: undefined
+      }
+      release_turn: {
+        Args: { p_lease: string; p_owner: string; p_turn: string }
+        Returns: undefined
+      }
+      reserve_turn: {
+        Args: {
+          p_action: string
+          p_campaign: string
+          p_lease: string
+          p_owner: string
+          p_request: string
+          p_roll: number
+          p_version: number
+        }
+        Returns: {
+          action: string
+          campaign_id: string
+          created_at: string
+          entry: Json | null
+          error_code: string | null
+          id: string
+          intent: Json | null
+          lease_token: string | null
+          lease_until: string | null
+          owner_id: string
+          provider: string | null
+          request_id: string
+          resolution: Json | null
+          roll: number
+          sequence: number
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "turns"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
