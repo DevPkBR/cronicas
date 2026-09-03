@@ -7,8 +7,8 @@ export async function POST(request:Request){
  let release:(()=>Promise<unknown>)|undefined;
  try{
   const {db,owner}=await authenticated(request);
-  const key=request.headers.get('x-narrator-key')?.trim();
-  if(!key||key.length>256)throw new HttpError('Configure sua chave do Gemini para continuar.',400);
+  const key=request.headers.get('x-narrator-key')?.trim()??'';
+  if(key.length>256)throw new HttpError('A chave alternativa é inválida.',400);
   const input=schema.parse(await body(request));
   const random=new Uint32Array(1);do{crypto.getRandomValues(random);}while(random[0]>=4294967292);
   const lease=crypto.randomUUID();
@@ -23,7 +23,7 @@ export async function POST(request:Request){
   const narration=await narrate(key,context,intent,resolution);
   const next=stateSchema.parse({...resolution.state,location:narration.location,memory:narration.memory,rival:narration.rival});
   const entry={action:turn.action,text:narration.text,choices:narration.choices,test:resolution.test};
-  await rpc(db,'finish_turn',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry});
+  await rpc(db,'finish_turn_with_provider',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry,p_provider:key?'gemini-2.5-flash-lite':'cloudflare/llama-3.1-8b-fast'});
   release=undefined;
   return json(await campaign(db,owner,input.campaignId));
  }catch(error){

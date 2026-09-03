@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {interpret,narrate,ProviderError} from '../.test-build/narrator.mjs';
+import {interpret,narrate,ProviderError,setCloudflareRunnerForTests} from '../.test-build/narrator.mjs';
 import {initialState,resolve} from '../.test-build/game.mjs';
 const payload={character:{name:'Ari',origin:'Viajante',goal:'Encontrar abrigo',weapon:'Bastão'},state:initialState,action:'Perguntar sobre a entrega',history:[]};
 test('AI contract and failures with simulated provider; no network calls',async(t)=>{
@@ -9,4 +9,8 @@ test('AI contract and failures with simulated provider; no network calls',async(
  const output=await narrate('test-key',payload,intent,resolution);assert.equal(output.location,'Estalagem');assert.equal(resolution.state.turn,1);assert.equal(calls,2);
  globalThis.fetch=async()=>Response.json({error:'quota'},{status:429});await assert.rejects(()=>interpret('test-key',payload),e=>e instanceof ProviderError&&e.status===429);
  globalThis.fetch=async()=>Response.json({candidates:[{content:{parts:[{text:'{}'}]}}]});await assert.rejects(()=>interpret('test-key',payload));
+});
+test('included Cloudflare narrator needs no player key',async()=>{
+ let calls=0;setCloudflareRunnerForTests(async(_model,input)=>{calls++;assert.equal(input.response_format.type,'json_schema');return {response:calls===1?{kind:'routine',attribute:'Presença',difficulty:'easy',danger:false,reason:'Conversa sem risco'}:{text:'Mara explica a entrega enquanto a chuva cobre a praça lá fora.',choices:['Ouvir Mara','Observar Ivo'],location:'Estalagem',memory:'Mara explicou a entrega.',rival:'Ivo observa.'}};});
+ try{const intent=await interpret('',payload);const resolution=resolve(initialState,payload.character,intent,4);const output=await narrate('',payload,intent,resolution);assert.equal(output.location,'Estalagem');assert.equal(calls,2);}finally{setCloudflareRunnerForTests(undefined);}
 });

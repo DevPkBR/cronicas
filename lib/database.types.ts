@@ -190,6 +190,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      finish_turn_with_provider: {
+        Args: {
+          p_entry: Json
+          p_lease: string
+          p_owner: string
+          p_provider: string
+          p_state: Json
+          p_turn: string
+        }
+        Returns: undefined
+      }
       release_turn: {
         Args: { p_lease: string; p_owner: string; p_turn: string }
         Returns: undefined

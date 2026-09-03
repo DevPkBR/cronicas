@@ -21,7 +21,7 @@ test('checkpoint survives failed narration; retry uses saved roll and commits on
   if(url.includes('/rpc/reserve_turn')){assert.equal(body.p_owner,owner);turn??={id:requestId,request_id:requestId,sequence:1,action:'Conversar',status:'pending',roll:1};return Response.json(turn);}
   if(url.includes('/rpc/checkpoint_turn')){turn.intent=body.p_intent;turn.resolution=body.p_resolution;turn.status='resolved';return Response.json(null);}
   if(url.includes('/rpc/release_turn'))return Response.json(null);
-  if(url.includes('/rpc/finish_turn')){finishes++;savedState=body.p_state;turn.entry=body.p_entry;turn.status='completed';return Response.json(null);}
+  if(url.includes('/rpc/finish_turn')){finishes++;assert.equal(body.p_provider,'gemini-2.5-flash-lite');savedState=body.p_state;turn.entry=body.p_entry;turn.status='completed';return Response.json(null);}
   if(url.includes('/rest/v1/campaigns'))return Response.json({id:campaignId,state:savedState,version:savedState.turn,characters:character});
   if(url.includes('/rest/v1/turns'))return Response.json(turn?[turn]:[]);
   if(url.includes('generativelanguage')){

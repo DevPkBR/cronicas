@@ -5,6 +5,6 @@ export default defineConfig(async () => {
   return { plugins: [vinext(), cloudflare({
     viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
     inspectorPort: false,
-    config: { name: 'cronicas', main: './worker/index.ts', compatibility_date: '2026-05-15', compatibility_flags: ['nodejs_compat'] },
+    config: { name: 'cronicas', main: './worker/index.ts', compatibility_date: '2026-05-15', compatibility_flags: ['nodejs_compat'], ai: { binding: 'AI' } },
   })] };
 });

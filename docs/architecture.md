@@ -12,7 +12,7 @@ Login, personagens e campanhas vinculados ao usuário. RLS para impedir leitura 
 Tabelas planejadas: characters (owner_id e criação), campaigns (owner_id, personagem, estado, versão, memória), turns (campaign_id, request_id único, estado do processamento, intenção, rolagem, resultado e narrativa). Uma campanha só processa um turno por vez. Salvar reserva/rolagem e concluir com transação e verificação da versão; recuperação para turnos interrompidos. Não enviar credencial service_role ao navegador.
 
 ## Etapa 3 — provedores e fallback
-Contrato independente: interpretar ação e narrar resultado. Adaptadores para Gemini, Groq e OpenRouter. Começar com modelos confirmados como gratuitos/disponíveis na conta, sem fallback pago. Chaves do projeto no servidor; chave própria do jogador opcional. Quotas por usuário para os recursos compartilhados.
+Contrato independente: interpretar ação e narrar resultado. Workers AI é o padrão incluído e Gemini pessoal é opcional. Próximos adaptadores: Groq e OpenRouter, apenas com modelos confirmados como gratuitos, sem fallback pago. Quotas por usuário serão necessárias para os recursos compartilhados.
 
 Timeout, 429 ou falha transitória podem selecionar próximo provedor. Respeitar Retry-After e limitar tentativas/tempo total. Chave inválida desabilita o provedor até correção. Não usar fallback para contornar recusas de segurança. Trocar modelos no mesmo serviço não renova quotas compartilhadas.
 

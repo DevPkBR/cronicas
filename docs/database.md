@@ -6,6 +6,7 @@ Projeto Supabase `ldxjykligttssfihgjou`, São Paulo. Independente de Devtrine.
 
 - `20260903191241_create_game_persistence.sql`: personagens, campanhas, turnos e RLS.
 - `20260903194551_atomic_campaign_turns.sql`: criação atômica, reserva exclusiva, checkpoint e conclusão idempotente.
+- `20260903221227_record_narrator_provider.sql`: registra o provedor que concluiu cada turno.
 
 Arquivos exportados com as versões retornadas pelo histórico remoto e o SQL executado. Não reaplicar manualmente no projeto já configurado.
 
@@ -21,7 +22,7 @@ A chave publicável pode estar no navegador. A chave secreta é exclusiva do Wor
 
 1. Reservar request_id e d12 sob bloqueio da campanha. Só existe um turno inacabado por campanha.
 2. A reserva concede uma licença de processamento por 120 segundos. Outra tentativa simultânea recebe conflito.
-3. Interpretar a ação, resolver as regras e salvar interpretação e resultado antes de pedir a narrativa.
+3. Interpretar a ação, resolver as regras e salvar interpretação e resultado antes de pedir a narrativa. O Workers AI é usado sem chave do jogador; Gemini pessoal é opcional.
 4. Validar a narrativa, atualizar a ficha e concluir o turno em uma única transação.
 5. Em falha, liberar a licença sem perder rolagem ou resultado. Se o processo morrer, a licença expira. Repetições de turno concluído só devolvem a aventura atual.
 

@@ -32,9 +32,9 @@ O banco está configurado; o Worker precisa do segredo abaixo. Chaves de IA comp
 3. No Cloudflare, abra **Workers & Pages → cronicas → Settings → Variables and Secrets**. Adicione **Secret** chamado `SUPABASE_SECRET_KEY`, cole o valor e aplique a configuração. Não use prefixo `NEXT_PUBLIC_` nem inclua o segredo em arquivos versionados.
 4. No Supabase, abra **Authentication → URL Configuration**: Site URL deve ser a URL HTTPS publicada; inclua a mesma URL com `/` final em Redirect URLs. Para desenvolvimento, autorize explicitamente a origem local que usar.
 5. Em **Authentication → Sign In / Providers**, mantenha e-mail/senha habilitados e confirmação de e-mail ativa. Configure SMTP próprio antes de abrir cadastros ao público: o SMTP padrão só envia a integrantes da organização e tem limites restritos. Não adicione jogadores à equipe administrativa para contornar essa restrição.
-6. Com a conta de teste do responsável, cadastre-se, confirme o e-mail, entre e crie uma aventura. Configure sua chave de IA, conclua um turno, recarregue e retome. Saia, entre novamente e confira a mesma ficha. Verifique que outra conta não vê a campanha.
+6. Com a conta de teste do responsável, cadastre-se, confirme o e-mail, entre e crie uma aventura. Conclua um turno com a IA incluída, recarregue e retome. Saia, entre novamente e confira a mesma ficha. Verifique que outra conta não vê a campanha.
 
-O SDK armazena a sessão de login no navegador para permitir retomada. A chave de IA é só memória: deve ser informada novamente após recarregar. A demonstração permanece sem conta e sem salvamento. O botão “Sair desta sessão” limpa a sessão local.
+O SDK armazena a sessão de login no navegador para permitir retomada. O Workers AI não exige chave do jogador. Uma chave pessoal opcional do Gemini fica só em memória e precisa ser informada novamente após recarregar. A demonstração permanece sem conta e sem salvamento. O botão “Sair desta sessão” limpa a sessão local.
 
 No desenvolvimento, use um arquivo `.dev.vars` ignorado pelo Git com `SUPABASE_SECRET_KEY` e rode `npm run dev`; o plugin do Cloudflare carrega esse arquivo. O build não exige segredo. A configuração atual usa `nodejs_compat` e uma data compatível com segredos em `process.env`.
 
