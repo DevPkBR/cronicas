@@ -23,7 +23,7 @@ export async function POST(request:Request){
   const narration=await narrate(key,context,intent,resolution);
   const next=stateSchema.parse({...resolution.state,location:narration.location,memory:narration.memory,rival:narration.rival});
   const entry={action:turn.action,text:narration.text,choices:narration.choices,test:resolution.test};
-  await rpc(db,'finish_turn_with_provider',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry,p_provider:key?'gemini-2.5-flash-lite':'cloudflare/llama-3.1-8b-fast'});
+  await rpc(db,'finish_turn_with_provider',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry,p_provider:key?'gemini-2.5-flash-lite':'cloudflare/llama-3.1-intent+llama-3.3-70b-narration'});
   release=undefined;
   return json(await campaign(db,owner,input.campaignId));
  }catch(error){
