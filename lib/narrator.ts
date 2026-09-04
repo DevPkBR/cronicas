@@ -48,7 +48,7 @@ function similarity(left:string,right:string){
 function repeatsRecentScene(scene:z.infer<typeof narrationSchema>,input:NarratorInput){
  const recent=input.history.slice(-4);
  if(recent.some(item=>similarity(scene.text,item.text)>=0.68))return true;
- const actions=recent.map(item=>item.action.toLocaleLowerCase('pt-BR').trim()).filter(Boolean);
+ const actions=[input.action,...recent.map(item=>item.action)].map(action=>action.toLocaleLowerCase('pt-BR').trim()).filter(Boolean);
  return scene.choices.some(choice=>{const value=choice.toLocaleLowerCase('pt-BR').trim();return actions.some(action=>value===action||value.includes(action)||action.includes(value));});
 }
 export async function interpret(key:string,input:NarratorInput){
