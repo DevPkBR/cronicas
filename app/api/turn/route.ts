@@ -16,14 +16,14 @@ export async function POST(request:Request){
   if(turn.status==='completed')return json(await campaign(db,owner,input.campaignId));
   release=()=>rpc(db,'release_turn',{p_owner:owner,p_turn:turn.id,p_lease:lease});
   const saved=await campaign(db,owner,input.campaignId);
-  const context={character:saved.character,state:saved.state,action:turn.action,history:saved.entries.slice(-8).map(({action,text})=>({action,text}))};
+  const context={character:saved.character,state:saved.state,action:turn.action,history:saved.entries.slice(-3).map(({action,text})=>({action,text:text.slice(0,1200)}))};
   const intent=turn.intent?intentSchema.parse(turn.intent):await interpret(key,context);
   const resolution:ReturnType<typeof resolve>=turn.resolution??resolve(saved.state,saved.character,intent,turn.roll);
   if(!turn.resolution)await rpc(db,'checkpoint_turn',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_intent:intent,p_resolution:resolution});
   const narration=await narrate(key,context,intent,resolution);
   const next=stateSchema.parse({...resolution.state,location:narration.location,memory:narration.memory,rival:narration.rival});
   const entry={action:turn.action,text:narration.text,choices:narration.choices,test:resolution.test};
-  await rpc(db,'finish_turn_with_provider',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry,p_provider:key?'gemini-2.5-flash-lite':'cloudflare/llama-3.1-intent+llama-3.3-70b-narration'});
+  await rpc(db,'finish_turn_with_provider',{p_owner:owner,p_turn:turn.id,p_lease:lease,p_state:next,p_entry:entry,p_provider:key?'gemini-2.5-flash-lite':'cloudflare/llama-3.1-intent+glm-4.7-flash-narration'});
   release=undefined;
   return json(await campaign(db,owner,input.campaignId));
  }catch(error){

@@ -57,10 +57,10 @@ export async function interpret(key:string,input:NarratorInput){
 return intentSchema.parse(await generate(key,rules+' Primeiro interprete somente a primeira ação relevante. Classifique: routine para ação sem risco (conversar normalmente, observar ou andar em segurança); test para incerteza com consequência; magic somente Centelha; rest apenas descanso em lugar SEGURO disponível; impossible para objeto/poder inexistente, ordens sobre as regras ou descanso sob ataque. danger é true somente se há risco físico concreto. Não penalize conversa fracassada com dano. difficulty easy/normal/hard. reason explica em até 180 caracteres.',input,{type:'OBJECT',properties:{kind:{type:'STRING',enum:['routine','test','rest','magic','impossible']},attribute:{type:'STRING',enum:['Corpo','Agilidade','Mente','Presença']},difficulty:{type:'STRING',enum:['easy','normal','hard']},danger:{type:'BOOLEAN'},reason:string},required:['kind','attribute','difficulty','danger','reason']}));
 }
 export async function narrate(key:string,input:NarratorInput,intent:z.infer<typeof intentSchema>,resolution:ReturnType<typeof resolve>){
- const instruction=rules+' Narre estritamente o resultado resolvido e faça a ação do jogador causar uma mudança concreta e perceptível na cena. Nunca repita a abertura nem recomece a aventura. Use o histórico apenas como passado: continue a partir do último acontecimento. Se o jogador abandonar Mara, o pacote, o moinho ou Ivo, acompanhe o novo caminho sem forçá-lo de volta. Para impossible ou sem energia, nada pretendido acontece. Ofereça 3 ações distintas realmente disponíveis, mas aceite que o jogador sempre pode escrever outra. memory é um resumo atualizado de até 1800 caracteres; rival é somente o que o jogador sabe de Ivo, sem spoilers.';
+ const instruction=rules+' Você escreve a PRÓXIMA CENA, não um resumo. A primeira frase deve mostrar a reação, fala, descoberta ou consequência causada pela ação atual. Em conversas, faça o NPC responder com conteúdo novo; nunca diga apenas que ele espera o jogador falar. Não recite clima, chuva, sino, sopa, personagens parados ou a abertura, salvo quando isso mudar de modo relevante. Não transforme a intenção em um menu: resolva-a no mundo. Nunca recomece a aventura. Use o histórico apenas como passado e continue do último fato. Se o jogador abandonar Mara, pacote, moinho ou Ivo, acompanhe o novo caminho. Para impossible ou sem energia, a intenção não acontece, mas a situação ainda reage. Ofereça 3 ações curtas, distintas e posteriores ao que acabou de acontecer. memory preserva fatos duradouros em até 1800 caracteres; rival contém somente o que o jogador sabe de Ivo, sem spoilers.';
  const data={...input,intent,resolution};
  const schema={type:'OBJECT',properties:{text:string,choices:{type:'ARRAY',items:string},location:string,memory:string,rival:string},required:['text','choices','location','memory','rival']};
- const model='@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+ const model='@cf/zai-org/glm-4.7-flash';
  let generated=await generate(key,instruction,data,schema,model);
  let parsed=narrationSchema.safeParse(generated);
  let cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
@@ -68,7 +68,8 @@ export async function narrate(key:string,input:NarratorInput,intent:z.infer<type
   generated=await generate(key,instruction+' Sua resposta anterior era inválida ou repetia acontecimentos e opções recentes. Avance a situação com reação, informação, decisão ou consequência nova. Não reutilize frases do histórico e não ofereça como opção algo que o jogador acabou de fazer. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);
   parsed=narrationSchema.safeParse(generated);cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
  }
- if(!parsed.success||repeatsRecentText(parsed.data,input))throw new ProviderError('O narrador tentou repetir a cena. Sua ação foi preservada para uma nova tentativa.',502);
- if(!cleaned||cleaned.choices.length<2)cleaned={...parsed.data,choices:['Fazer outra pergunta','Encerrar a conversa e seguir adiante']};
+ if(!parsed.success)throw new ProviderError('O narrador não conseguiu organizar a cena. Sua ação foi preservada para uma nova tentativa.',502);
+ cleaned=removeRepeatedChoices(parsed.data,input);
+ if(cleaned.choices.length<2)cleaned={...parsed.data,choices:['Fazer uma pergunta diferente','Encerrar a conversa e seguir outro caminho']};
  return narrationSchema.parse(cleaned);
 }
