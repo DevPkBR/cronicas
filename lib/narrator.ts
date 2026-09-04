@@ -64,7 +64,7 @@ export async function narrate(key:string,input:NarratorInput,intent:z.infer<type
  const generated=await generate(key,instruction,data,schema,model);
  const parsed=narrationSchema.safeParse(generated);
  if(!parsed.success)throw new ProviderError('O narrador não conseguiu organizar a cena. Sua ação foi preservada para uma nova tentativa.',502);
- cleaned=removeRepeatedChoices(parsed.data,input);
+ let cleaned=removeRepeatedChoices(parsed.data,input);
  if(cleaned.choices.length<2)cleaned={...parsed.data,choices:['Fazer uma pergunta diferente','Encerrar a conversa e seguir outro caminho']};
  return narrationSchema.parse(cleaned);
 }
