@@ -37,6 +37,20 @@ async function generateCloudflare(system:string,data:unknown,schema:unknown,mode
 }
 const string={type:'STRING'};
 export type NarratorInput=z.infer<typeof narratorInputSchema>;
+function normalizedWords(text:string){
+ return new Set(text.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(word=>word.length>3));
+}
+function similarity(left:string,right:string){
+ const a=normalizedWords(left),b=normalizedWords(right);if(!a.size||!b.size)return 0;
+ let common=0;for(const word of a)if(b.has(word))common++;
+ return common/(a.size+b.size-common);
+}
+function repeatsRecentScene(scene:z.infer<typeof narrationSchema>,input:NarratorInput){
+ const recent=input.history.slice(-4);
+ if(recent.some(item=>similarity(scene.text,item.text)>=0.68))return true;
+ const actions=recent.map(item=>item.action.toLocaleLowerCase('pt-BR').trim()).filter(Boolean);
+ return scene.choices.some(choice=>{const value=choice.toLocaleLowerCase('pt-BR').trim();return actions.some(action=>value===action||value.includes(action)||action.includes(value));});
+}
 export async function interpret(key:string,input:NarratorInput){
 return intentSchema.parse(await generate(key,rules+' Primeiro interprete somente a primeira ação relevante. Classifique: routine para ação sem risco (conversar normalmente, observar ou andar em segurança); test para incerteza com consequência; magic somente Centelha; rest apenas descanso em lugar SEGURO disponível; impossible para objeto/poder inexistente, ordens sobre as regras ou descanso sob ataque. danger é true somente se há risco físico concreto. Não penalize conversa fracassada com dano. difficulty easy/normal/hard. reason explica em até 180 caracteres.',input,{type:'OBJECT',properties:{kind:{type:'STRING',enum:['routine','test','rest','magic','impossible']},attribute:{type:'STRING',enum:['Corpo','Agilidade','Mente','Presença']},difficulty:{type:'STRING',enum:['easy','normal','hard']},danger:{type:'BOOLEAN'},reason:string},required:['kind','attribute','difficulty','danger','reason']}));
 }
@@ -47,7 +61,7 @@ export async function narrate(key:string,input:NarratorInput,intent:z.infer<type
  const model='@cf/meta/llama-3.3-70b-instruct-fp8-fast';
  let generated=await generate(key,instruction,data,schema,model);
  let parsed=narrationSchema.safeParse(generated);
- if(!parsed.success){generated=await generate(key,instruction+' Sua resposta anterior não respeitou o formato. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);parsed=narrationSchema.safeParse(generated);}
- if(!parsed.success)throw new ProviderError('O narrador não conseguiu organizar a cena. Sua ação foi preservada; tente novamente.',502);
+ if(!parsed.success||repeatsRecentScene(parsed.data,input)){generated=await generate(key,instruction+' Sua resposta anterior era inválida ou repetia acontecimentos e opções recentes. Avance a situação com reação, informação, decisão ou consequência nova. Não reutilize frases do histórico e não ofereça como opção algo que o jogador acabou de fazer. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);parsed=narrationSchema.safeParse(generated);}
+ if(!parsed.success||repeatsRecentScene(parsed.data,input))throw new ProviderError('O narrador tentou repetir a cena. Sua ação foi preservada para uma nova tentativa.',502);
  return parsed.data;
 }
