@@ -45,11 +45,13 @@ function similarity(left:string,right:string){
  let common=0;for(const word of a)if(b.has(word))common++;
  return common/(a.size+b.size-common);
 }
-function repeatsRecentScene(scene:z.infer<typeof narrationSchema>,input:NarratorInput){
- const recent=input.history.slice(-4);
- if(recent.some(item=>similarity(scene.text,item.text)>=0.68))return true;
- const actions=[input.action,...recent.map(item=>item.action)].map(action=>action.toLocaleLowerCase('pt-BR').trim()).filter(Boolean);
- return scene.choices.some(choice=>{const value=choice.toLocaleLowerCase('pt-BR').trim();return actions.some(action=>value===action||value.includes(action)||action.includes(value));});
+function repeatsRecentText(scene:z.infer<typeof narrationSchema>,input:NarratorInput){
+ return input.history.slice(-4).some(item=>similarity(scene.text,item.text)>=0.72);
+}
+function removeRepeatedChoices(scene:z.infer<typeof narrationSchema>,input:NarratorInput){
+ const actions=[input.action,...input.history.slice(-4).map(item=>item.action)].map(action=>action.toLocaleLowerCase('pt-BR').trim()).filter(Boolean);
+ const choices=scene.choices.filter(choice=>{const value=choice.toLocaleLowerCase('pt-BR').trim();return !actions.some(action=>value===action||value.includes(action)||action.includes(value));});
+ return {...scene,choices};
 }
 export async function interpret(key:string,input:NarratorInput){
 return intentSchema.parse(await generate(key,rules+' Primeiro interprete somente a primeira ação relevante. Classifique: routine para ação sem risco (conversar normalmente, observar ou andar em segurança); test para incerteza com consequência; magic somente Centelha; rest apenas descanso em lugar SEGURO disponível; impossible para objeto/poder inexistente, ordens sobre as regras ou descanso sob ataque. danger é true somente se há risco físico concreto. Não penalize conversa fracassada com dano. difficulty easy/normal/hard. reason explica em até 180 caracteres.',input,{type:'OBJECT',properties:{kind:{type:'STRING',enum:['routine','test','rest','magic','impossible']},attribute:{type:'STRING',enum:['Corpo','Agilidade','Mente','Presença']},difficulty:{type:'STRING',enum:['easy','normal','hard']},danger:{type:'BOOLEAN'},reason:string},required:['kind','attribute','difficulty','danger','reason']}));
@@ -61,7 +63,12 @@ export async function narrate(key:string,input:NarratorInput,intent:z.infer<type
  const model='@cf/meta/llama-3.3-70b-instruct-fp8-fast';
  let generated=await generate(key,instruction,data,schema,model);
  let parsed=narrationSchema.safeParse(generated);
- if(!parsed.success||repeatsRecentScene(parsed.data,input)){generated=await generate(key,instruction+' Sua resposta anterior era inválida ou repetia acontecimentos e opções recentes. Avance a situação com reação, informação, decisão ou consequência nova. Não reutilize frases do histórico e não ofereça como opção algo que o jogador acabou de fazer. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);parsed=narrationSchema.safeParse(generated);}
- if(!parsed.success||repeatsRecentScene(parsed.data,input))throw new ProviderError('O narrador tentou repetir a cena. Sua ação foi preservada para uma nova tentativa.',502);
- return parsed.data;
+ let cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
+ if(!parsed.success||repeatsRecentText(parsed.data,input)||!cleaned||cleaned.choices.length<2){
+  generated=await generate(key,instruction+' Sua resposta anterior era inválida ou repetia acontecimentos e opções recentes. Avance a situação com reação, informação, decisão ou consequência nova. Não reutilize frases do histórico e não ofereça como opção algo que o jogador acabou de fazer. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);
+  parsed=narrationSchema.safeParse(generated);cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
+ }
+ if(!parsed.success||repeatsRecentText(parsed.data,input))throw new ProviderError('O narrador tentou repetir a cena. Sua ação foi preservada para uma nova tentativa.',502);
+ if(!cleaned||cleaned.choices.length<2)cleaned={...parsed.data,choices:['Fazer outra pergunta','Encerrar a conversa e seguir adiante']};
+ return narrationSchema.parse(cleaned);
 }
