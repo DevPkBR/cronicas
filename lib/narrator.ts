@@ -13,6 +13,11 @@ async function generate(key:string,system:string,data:unknown,schema:unknown){
  if(!raw)throw new ProviderError('A IA não retornou uma cena. Reformule a ação e tente novamente.');
  try{return JSON.parse(raw);}catch{throw new ProviderError('A IA retornou uma resposta incompleta. Tente novamente.');}
 }
+function cloudflareSchema(value:unknown):unknown{
+ if(Array.isArray(value))return value.map(cloudflareSchema);
+ if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,key==='type'&&typeof item==='string'?item.toLowerCase():cloudflareSchema(item)]));
+ return value;
+}
 type AiRunner=(model:string,input:Record<string,unknown>)=>Promise<unknown>;
 let testRunner:AiRunner|undefined;
 export function setCloudflareRunnerForTests(runner:AiRunner|undefined){testRunner=runner;}
@@ -20,7 +25,7 @@ async function generateCloudflare(system:string,data:unknown,schema:unknown){
  try{
   let runner=testRunner;
   if(!runner){const cloudflareEnv=(await import('cloudflare:workers')).env as unknown as {AI:{run:AiRunner}};runner=cloudflareEnv.AI.run.bind(cloudflareEnv.AI);}
-  const output=await runner('@cf/meta/llama-3.1-8b-instruct-fast',{messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(data)}],response_format:{type:'json_schema',json_schema:schema},max_tokens:2200,temperature:0.65});
+  const output=await runner('@cf/meta/llama-3.1-8b-instruct-fast',{messages:[{role:'system',content:system},{role:'user',content:JSON.stringify(data)}],response_format:{type:'json_schema',json_schema:cloudflareSchema(schema)},max_tokens:2200,temperature:0.65});
   const response=z.object({response:z.unknown()}).parse(output).response;
   return typeof response==='string'?JSON.parse(response):response;
  }catch(error){
