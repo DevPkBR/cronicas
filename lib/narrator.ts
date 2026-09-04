@@ -60,14 +60,9 @@ export async function narrate(key:string,input:NarratorInput,intent:z.infer<type
  const instruction=rules+' Você escreve a PRÓXIMA CENA, não um resumo. A primeira frase deve mostrar a reação, fala, descoberta ou consequência causada pela ação atual. Em conversas, faça o NPC responder com conteúdo novo; nunca diga apenas que ele espera o jogador falar. Não recite clima, chuva, sino, sopa, personagens parados ou a abertura, salvo quando isso mudar de modo relevante. Não transforme a intenção em um menu: resolva-a no mundo. Nunca recomece a aventura. Use o histórico apenas como passado e continue do último fato. Se o jogador abandonar Mara, pacote, moinho ou Ivo, acompanhe o novo caminho. Para impossible ou sem energia, a intenção não acontece, mas a situação ainda reage. Ofereça 3 ações curtas, distintas e posteriores ao que acabou de acontecer. memory preserva fatos duradouros em até 1800 caracteres; rival contém somente o que o jogador sabe de Ivo, sem spoilers.';
  const data={...input,intent,resolution};
  const schema={type:'OBJECT',properties:{text:string,choices:{type:'ARRAY',items:string},location:string,memory:string,rival:string},required:['text','choices','location','memory','rival']};
- const model='@cf/zai-org/glm-4.7-flash';
- let generated=await generate(key,instruction,data,schema,model);
- let parsed=narrationSchema.safeParse(generated);
- let cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
- if(!parsed.success||repeatsRecentText(parsed.data,input)||!cleaned||cleaned.choices.length<2){
-  generated=await generate(key,instruction+' Sua resposta anterior era inválida ou repetia acontecimentos e opções recentes. Avance a situação com reação, informação, decisão ou consequência nova. Não reutilize frases do histórico e não ofereça como opção algo que o jogador acabou de fazer. Retorne exatamente os cinco campos solicitados, com 2 ou 3 escolhas curtas e texto entre 30 e 2400 caracteres.',data,schema,model);
-  parsed=narrationSchema.safeParse(generated);cleaned=parsed.success?removeRepeatedChoices(parsed.data,input):null;
- }
+ const model='@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+ const generated=await generate(key,instruction,data,schema,model);
+ const parsed=narrationSchema.safeParse(generated);
  if(!parsed.success)throw new ProviderError('O narrador não conseguiu organizar a cena. Sua ação foi preservada para uma nova tentativa.',502);
  cleaned=removeRepeatedChoices(parsed.data,input);
  if(cleaned.choices.length<2)cleaned={...parsed.data,choices:['Fazer uma pergunta diferente','Encerrar a conversa e seguir outro caminho']};
